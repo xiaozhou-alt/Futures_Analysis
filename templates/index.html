@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>期货数据分析系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css">
+    <!-- 引入Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --success: #27ae60;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            color: #333;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .trend-up { 
+            background: linear-gradient(135deg, rgba(231, 76, 60, 0.1), rgba(231, 76, 60, 0.05)); 
+            border-left: 4px solid var(--danger);
+        }
+        .trend-down { 
+            background: linear-gradient(135deg, rgba(39, 174, 96, 0.1), rgba(39, 174, 96, 0.05)); 
+            border-left: 4px solid var(--success);
+        }
+        .trend-flat { 
+            background: linear-gradient(135deg, rgba(243, 156, 18, 0.1), rgba(243, 156, 18, 0.05)); 
+            border-left: 4px solid var(--warning);
+        }
+        
+        .trend-icon {
+            font-size: 1.2rem;
+            margin-right: 5px;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 24px;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+        }
+        
+        .card-header {
+            background-color: white;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            padding: 16px 24px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .stat-card { 
+            transition: all 0.3s; 
+        }
+        .stat-card:hover { 
+            transform: translateY(-5px); 
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1); 
+        }
+        
+        .company-badge { 
+            cursor: pointer; 
+            transition: all 0.2s;
+        }
+        .company-badge:hover {
+            transform: scale(1.05);
+            opacity: 0.9;
+        }
+        
+        .reason-popover { 
+            max-width: 400px; 
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-bottom: 20px;
+        }
+        
+        .input-with-datalist {
+            position: relative;
+        }
+        
+        .datalist-options {
+            position: absolute;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            width: 100%;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .datalist-option {
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .datalist-option:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .pdf-download-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            padding: 5px 10px;
+            font-size: 0.8rem;
+            z-index: 10;
+            border-radius: 20px;
+            transition: all 0.2s;
+        }
+        
+        .pdf-download-btn:hover {
+            background-color: var(--secondary);
+            color: white;
+        }
+        
+        .list-group-item {
+            position: relative;
+            padding-right: 120px;
+            border: none;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            padding: 12px 15px;
+        }
+        
+        .list-group-item:last-child {
+            border-bottom: none;
+        }
+        
+        .btn-primary {
+            background-color: var(--secondary);
+            border-color: var(--secondary);
+            border-radius: 8px;
+            padding: 8px 20px;
+            font-weight: 500;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+            border-color: #2980b9;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, var(--primary), #1a2530);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 15px 0;
+        }
+        
+        .brand-logo {
+            display: flex;
+            align-items: center;
+            color: white;
+            font-weight: 700;
+            font-size: 1.5rem;
+            text-decoration: none;
+        }
+        
+        .brand-logo i {
+            margin-right: 10px;
+            font-size: 1.8rem;
+        }
+        
+        .page-title {
+            position: relative;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .page-title:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: var(--secondary);
+            border-radius: 2px;
+        }
+        
+        .filter-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: var(--card-shadow);
+        }
+        
+        .footer {
+            background: var(--primary);
+            color: white;
+            padding: 30px 0;
+            margin-top: 50px;
+        }
+        
+        .footer a {
+            color: var(--light);
+            transition: color 0.2s;
+        }
+        
+        .footer a:hover {
+            color: var(--secondary);
+        }
+        
+        .stat-badge {
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: 500;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .stat-badge.bg-danger { background-color: rgba(231, 76, 60, 0.15); color: var(--danger); }
+        .stat-badge.bg-success { background-color: rgba(39, 174, 96, 0.15); color: var(--success); }
+        .stat-badge.bg-warning { background-color: rgba(243, 156, 18, 0.15); color: var(--warning); }
+        
+        .trend-label {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+        
+        .trend-label.trend-up { background-color: rgba(231, 76, 60, 0.15); color: var(--danger); }
+        .trend-label.trend-down { background-color: rgba(39, 174, 96, 0.15); color: var(--success); }
+        .trend-label.trend-flat { background-color: rgba(243, 156, 18, 0.15); color: var(--warning); }
+        
+        .chart-toggle-btn {
+            border-radius: 8px;
+            padding: 6px 12px;
+            background: white;
+            border: 1px solid #ddd;
+            transition: all 0.2s;
+        }
+        
+        .chart-toggle-btn:hover {
+            background-color: #f8f9fa;
+            border-color: var(--secondary);
+            color: var(--secondary);
+        }
+        
+        .date-badge {
+            background-color: var(--secondary);
+            color: white;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            border-radius: 12px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <div class="brand-logo">
+                    <i class="bi bi-graph-up"></i>
+                    <span>期货分析系统</span>
+                </div>
+            </a>
+            <div class="d-flex align-items-center">
+                <span class="text-white me-3 d-none d-md-block">非专业期货市场分析平台</span>
+                <button class="btn btn-outline-light">
+                    <i class="bi bi-person-circle me-1"></i> 用户中心
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-4">
+        <h1 class="text-center mb-4 page-title">期货市场分析看板</h1>
+        
+        <!-- 筛选区域 -->
+        <div class="card mb-4">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-funnel me-2"></i>数据筛选</h5>
+                <div class="text-muted small">精准筛选市场数据</div>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label"><i class="bi bi-calendar me-1"></i>开始日期</label>
+                        <input type="date" id="startDate" class="form-control" value="2025-04-01">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label"><i class="bi bi-calendar me-1"></i>结束日期</label>
+                        <input type="date" id="endDate" class="form-control" value="2025-04-29">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label"><i class="bi bi-tags me-1"></i>期货种类</label>
+                        <div class="input-with-datalist">
+                            <input type="text" id="typeInput" class="form-control" list="typeOptions" 
+                                   placeholder="输入或选择期货种类" autocomplete="off">
+                            <datalist id="typeOptions">
+                                <!-- 动态填充 -->
+                            </datalist>
+                            <div id="customDatalist" class="datalist-options"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3 d-flex justify-content-end">
+                    <button id="filterBtn" class="btn btn-primary">
+                        <i class="bi bi-funnel me-1"></i> 应用筛选
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 堆叠柱状图 -->
+        <div class="card mb-4">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-bar-chart-line me-2"></i>涨跌情况统计</h5>
+                <div>
+                    <button id="chartToggle" class="btn chart-toggle-btn">
+                        <i class="bi bi-arrows-expand me-1"></i> 切换视图
+                    </button>
+                </div>
+            </div>
+            <div class="card-body position-relative">
+                <div class="loading-overlay d-none" id="chartLoading">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-3">正在加载图表...</p>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 统计卡片 -->
+        <div id="statsContainer" class="row mb-4">
+            <!-- 动态填充 -->
+        </div>
+        
+        <!-- 每日数据 -->
+        <div class="card">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-table me-2"></i>每日市场观点</h5>
+                <div class="text-muted small">最新市场动态分析</div>
+            </div>
+            <div class="card-body position-relative">
+                <div class="loading-overlay d-none" id="dataLoading">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-3">正在加载数据...</p>
+                    </div>
+                </div>
+                <div id="dailyData">
+                    <!-- 动态填充 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-4 mb-md-0">
+                    <h5 class="mb-3">期货数据分析系统</h5>
+                    <p>期货市场分析平台，提供实时数据分析和市场趋势预测。</p>
+                    <div class="d-flex mt-3">
+                        <a href="#" class="me-3"><i class="bi bi-twitter fs-5"></i></a>
+                        <a href="#" class="me-3"><i class="bi bi-facebook fs-5"></i></a>
+                        <a href="#" class="me-3"><i class="bi bi-linkedin fs-5"></i></a>
+                        <a href="#"><i class="bi bi-github fs-5"></i></a>
+                    </div>
+                </div>
+                <div class="col-md-2 mb-4 mb-md-0">
+                    <h5 class="mb-3">快速链接</h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><a href="#"><i class="bi bi-chevron-right me-1"></i> 首页</a></li>
+                        <li class="mb-2"><a href="#"><i class="bi bi-chevron-right me-1"></i> 市场分析</a></li>
+                        <li class="mb-2"><a href="#"><i class="bi bi-chevron-right me-1"></i> 数据报告</a></li>
+                        <li><a href="#"><i class="bi bi-chevron-right me-1"></i> 关于我们</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3 mb-4 mb-md-0">
+                    <h5 class="mb-3">联系我们</h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><i class="bi bi-geo-alt me-2"></i> 大连理工大学</li>
+                        <li class="mb-2"><i class="bi bi-telephone me-2"></i> +86 114514</li>
+                        <li><i class="bi bi-envelope me-2"></i> info@futures-analysis.com</li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h5 class="mb-3">订阅更新</h5>
+                    <p>订阅获取最新的市场分析报告</p>
+                    <div class="input-group">
+                        <input type="email" class="form-control" placeholder="您的邮箱">
+                        <button class="btn btn-outline-light" type="button">订阅</button>
+                    </div>
+                </div>
+            </div>
+            <hr class="my-4 bg-light">
+            <div class="text-center">
+                <p class="mb-0">&copy; 2025 期货数据分析系统. 小周出品，必属精品</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 全局变量
+        let trendChart = null;
+        let chartView = 'stacked'; // 'stacked' 或 'grouped'
+        let allTypes = []; // 存储所有期货种类
+        
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            // 显示加载状态
+            document.getElementById('dataLoading').classList.remove('d-none');
+            
+            // 获取期货种类
+            fetch('/api/types')
+                .then(response => response.json())
+                .then(types => {
+                    allTypes = types;
+                    
+                    // 填充datalist
+                    const datalist = document.getElementById('typeOptions');
+                    const customDatalist = document.getElementById('customDatalist');
+                    
+                    // 添加"全部种类"选项
+                    const allOption = document.createElement('option');
+                    allOption.value = 'all';
+                    allOption.textContent = '全部种类';
+                    datalist.appendChild(allOption);
+                    
+                    // 添加其他期货种类
+                    types.forEach(type => {
+                        const option = document.createElement('option');
+                        option.value = type;
+                        option.textContent = type;
+                        datalist.appendChild(option);
+                        
+                        // 添加到自定义下拉列表
+                        const customOption = document.createElement('div');
+                        customOption.className = 'datalist-option';
+                        customOption.textContent = type;
+                        customOption.addEventListener('click', function() {
+                            document.getElementById('typeInput').value = type;
+                            customDatalist.style.display = 'none';
+                        });
+                        customDatalist.appendChild(customOption);
+                    });
+                    
+                    // 添加"全部种类"到自定义下拉列表
+                    const allCustomOption = document.createElement('div');
+                    allCustomOption.className = 'datalist-option';
+                    allCustomOption.textContent = '全部种类';
+                    allCustomOption.addEventListener('click', function() {
+                        document.getElementById('typeInput').value = '全部种类';
+                        customDatalist.style.display = 'none';
+                    });
+                    customDatalist.insertBefore(allCustomOption, customDatalist.firstChild);
+                    
+                    // 加载初始数据
+                    loadData();
+                });
+            
+            // 绑定筛选按钮事件
+            document.getElementById('filterBtn').addEventListener('click', loadData);
+            
+            // 绑定图表视图切换按钮
+            document.getElementById('chartToggle').addEventListener('click', function() {
+                chartView = chartView === 'stacked' ? 'grouped' : 'stacked';
+                updateChartView();
+                this.innerHTML = chartView === 'stacked' ? 
+                    '<i class="bi bi-arrows-expand me-1"></i> 切换视图' : 
+                    '<i class="bi bi-stack me-1"></i> 切换视图';
+            });
+            
+            // 绑定输入框事件
+            const typeInput = document.getElementById('typeInput');
+            typeInput.addEventListener('focus', function() {
+                customDatalist.style.display = 'block';
+            });
+            
+            typeInput.addEventListener('input', function() {
+                const value = this.value.toLowerCase();
+                const options = customDatalist.querySelectorAll('.datalist-option');
+                
+                if (!value) {
+                    customDatalist.style.display = 'block';
+                    options.forEach(opt => opt.style.display = 'block');
+                    return;
+                }
+                
+                let hasMatch = false;
+                options.forEach(opt => {
+                    if (opt.textContent.toLowerCase().includes(value)) {
+                        opt.style.display = 'block';
+                        hasMatch = true;
+                    } else {
+                        opt.style.display = 'none';
+                    }
+                });
+                
+                customDatalist.style.display = hasMatch ? 'block' : 'none';
+            });
+            
+            // 点击其他地方隐藏下拉列表
+            document.addEventListener('click', function(e) {
+                if (!typeInput.contains(e.target) && !customDatalist.contains(e.target)) {
+                    customDatalist.style.display = 'none';
+                }
+            });
+        });
+        
+        // 加载数据函数
+        function loadData() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const selectedType = document.getElementById('typeInput').value;
+            
+            // 显示加载状态
+            document.getElementById('dataLoading').classList.remove('d-none');
+            document.getElementById('chartLoading').classList.remove('d-none');
+            document.getElementById('dailyData').innerHTML = '';
+            
+            // 获取表格数据
+            fetch(`/api/data?start_date=${startDate}&end_date=${endDate}&manual_type=${selectedType}`)
+                .then(response => response.json())
+                .then(data => {
+                    renderStats(data.type_stats);
+                    renderDailyData(data.daily_data);
+                    document.getElementById('dataLoading').classList.add('d-none');
+                })
+                .catch(() => {
+                    document.getElementById('dataLoading').classList.add('d-none');
+                });
+            
+            // 获取图表数据
+            fetch(`/api/chart_data?start_date=${startDate}&end_date=${endDate}&manual_type=${selectedType}`)
+                .then(response => response.json())
+                .then(data => {
+                    renderChart(data);
+                    document.getElementById('chartLoading').classList.add('d-none');
+                })
+                .catch(() => {
+                    document.getElementById('chartLoading').classList.add('d-none');
+                });
+        }
+        
+        // 渲染统计卡片
+        function renderStats(stats) {
+            const container = document.getElementById('statsContainer');
+            container.innerHTML = '';
+            
+            if (!stats || Object.keys(stats).length === 0) {
+                container.innerHTML = '<div class="col-12"><div class="alert alert-info text-center">没有统计数据</div></div>';
+                return;
+            }
+            
+            Object.keys(stats).forEach(type => {
+                const typeStats = stats[type];
+                const total = typeStats['看好'].count + typeStats['看空'].count + typeStats['震荡'].count;
+                
+                const card = document.createElement('div');
+                card.className = 'col-md-4 mb-4';
+                card.innerHTML = `
+                    <div class="card stat-card h-100">
+                        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">${type} 市场观点</h5>
+                            <span class="badge bg-primary">${total}条</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between mb-4">
+                                <span class="stat-badge bg-danger" style="font-weight: bold; color: white;">
+                                    <i class="bi bi-arrow-up"></i> 看好: ${typeStats['看好'].count}
+                                </span>
+                                <span class="stat-badge bg-success" style="font-weight: bold; color: white;">
+                                    <i class="bi bi-arrow-down"></i> 看空: ${typeStats['看空'].count}
+                                </span>
+                                <span class="stat-badge bg-warning" style="font-weight: bold; color: white;">
+                                    <i class="bi bi-dash"></i> 震荡: ${typeStats['震荡'].count}
+                                </span>
+                            </div>
+                            
+                            <h6 class="mt-3 mb-3 d-flex align-items-center">
+                                <i class="bi bi-building me-2"></i> 参与机构
+                            </h6>
+                            <div class="d-flex flex-wrap">
+                                ${typeStats['看好'].companies.map(c => 
+                                    `<span class="badge bg-danger me-1 mb-1 company-badge" 
+                                        data-bs-toggle="popover" title="看好观点" 
+                                        data-bs-content="机构: ${c}">${c}</span>`).join('')}
+                                ${typeStats['看空'].companies.map(c => 
+                                    `<span class="badge bg-success me-1 mb-1 company-badge" 
+                                        data-bs-toggle="popover" title="看空观点" 
+                                        data-bs-content="机构: ${c}">${c}</span>`).join('')}
+                                ${typeStats['震荡'].companies.map(c => 
+                                    `<span class="badge bg-warning me-1 mb-1 company-badge" 
+                                        data-bs-toggle="popover" title="震荡观点" 
+                                        data-bs-content="机构: ${c}">${c}</span>`).join('')}
+                            </div>
+                        </div>
+                        <div class="card-footer text-muted d-flex justify-content-between">
+                            <small>最后更新: ${new Date().toLocaleDateString()}</small>
+                            <small>${type}</small>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            
+            // 初始化弹出框
+            const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
+            popoverTriggerList.map(function (popoverTriggerEl) {
+                return new bootstrap.Popover(popoverTriggerEl, {
+                    container: 'body',
+                    trigger: 'hover focus'
+                });
+            });
+        }
+        
+        // 渲染堆叠柱状图
+        function renderChart(chartData) {
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            
+            // 销毁现有图表（如果存在）
+            if (trendChart) {
+                trendChart.destroy();
+            }
+            
+            // 创建新图表
+            trendChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: chartData.labels,
+                    datasets: chartData.datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '期货涨跌情况统计',
+                            font: {
+                                size: 18,
+                                weight: 'bold'
+                            },
+                            padding: {
+                                top: 10,
+                                bottom: 20
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                            padding: 12,
+                            titleFont: {
+                                size: 14
+                            },
+                            bodyFont: {
+                                size: 13
+                            },
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.dataset.label || '';
+                                    const value = context.parsed.y;
+                                    return `${label}: ${value} 家机构`;
+                                }
+                            }
+                        },
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    size: 13
+                                },
+                                padding: 20,
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                                boxWidth: 10
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            stacked: chartView === 'stacked',
+                            title: {
+                                display: true,
+                                text: '日期',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                },
+                                padding: {
+                                    top: 10
+                                }
+                            },
+                            grid: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            stacked: chartView === 'stacked',
+                            title: {
+                                display: true,
+                                text: '机构数量',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                },
+                                padding: {
+                                    bottom: 10
+                                }
+                            },
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0
+                            }
+                        }
+                    },
+                    interaction: {
+                        mode: 'index'
+                    },
+                    animation: {
+                        duration: 800,
+                        easing: 'easeOutQuart'
+                    }
+                }
+            });
+        }
+        
+        // 更新图表视图（堆叠/分组）
+        function updateChartView() {
+            if (trendChart) {
+                // 显示加载状态
+                document.getElementById('chartLoading').classList.remove('d-none');
+                
+                // 更新图表配置
+                trendChart.options.scales.x.stacked = chartView === 'stacked';
+                trendChart.options.scales.y.stacked = chartView === 'stacked';
+                
+                // 更新图表标题
+                trendChart.options.plugins.title.text = chartView === 'stacked' ? 
+                    '期货涨跌情况统计（堆叠视图）' : 
+                    '期货涨跌情况统计（分组视图）';
+                
+                // 重绘图表
+                setTimeout(() => {
+                    trendChart.update();
+                    document.getElementById('chartLoading').classList.add('d-none');
+                }, 300);
+            }
+        }
+        
+        // 渲染每日数据
+        function renderDailyData(data) {
+            const container = document.getElementById('dailyData');
+            
+            if (!data || data.length === 0) {
+                container.innerHTML = '<div class="alert alert-info text-center py-4">没有找到匹配的数据</div>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            
+            data.forEach(item => {
+                const trendClass = item.trend === '看好' ? 'trend-up' : 
+                                 item.trend === '看空' ? 'trend-down' : 'trend-flat';
+                const trendIcon = item.trend === '看好' ? 'bi-arrow-up' : 
+                                 item.trend === '看空' ? 'bi-arrow-down' : 'bi-dash';
+                
+                const accordionId = `accordion-${item.type}-${item.date.replace(/-/g, '')}`;
+                
+                const card = document.createElement('div');
+                card.className = 'card mb-4';
+                card.innerHTML = `
+                    <div class="card-header ${trendClass} d-flex justify-content-between align-items-center" 
+                         data-bs-toggle="collapse" data-bs-target="#${accordionId}">
+                        <div>
+                            <i class="bi ${trendIcon} trend-icon"></i>
+                            <strong>${item.type}</strong>
+                            <span class="date-badge ms-2">${item.date}</span>
+                        </div>
+                        <div>
+                            <span class="trend-label ${trendClass} me-2">${item.trend}</span>
+                            <i class="bi bi-chevron-down"></i>
+                        </div>
+                    </div>
+                    <div id="${accordionId}" class="collapse">
+                        <div class="card-body">
+                            <div class="row">
+                                ${Object.keys(item.details).map(trend => {
+                                    const trendClass = trend === '看好' ? 'trend-up' : 
+                                                     trend === '看空' ? 'trend-down' : 'trend-flat';
+                                    return `
+                                    <div class="col-md-4 mb-3">
+                                        <div class="card ${trendClass} h-100">
+                                            <div class="card-header d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <i class="bi ${trend === '看好' ? 'bi-arrow-up' : 
+                                                               trend === '看空' ? 'bi-arrow-down' : 'bi-dash'}"></i>
+                                                    ${trend}观点
+                                                </div>
+                                                <span class="badge bg-dark">${item.details[trend].length}家机构</span>
+                                            </div>
+                                            <div class="card-body">
+                                                <ul class="list-group list-group-flush">
+                                                    ${item.details[trend].map(detail => `
+                                                        <li class="list-group-item ${trendClass}">
+                                                            <div class="d-flex align-items-center mb-2">
+                                                                <strong>${detail.company}</strong>
+                                                                ${detail.pdf_filename ? 
+                                                                    `<button class="btn btn-sm pdf-download-btn" 
+                                                                            data-pdf-filename="${detail.pdf_filename}">
+                                                                        <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+                                                                    </button>` 
+                                                                    : ''}
+                                                            </div>
+                                                            <p class="mb-0">${detail.reason}</p>
+                                                        </li>
+                                                    `).join('')}
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            
+            // 初始化所有折叠元素
+            const collapseElementList = [].slice.call(document.querySelectorAll('.collapse'));
+            collapseElementList.map(function (collapseEl) {
+                return new bootstrap.Collapse(collapseEl, {
+                    toggle: false
+                });
+            });
+            
+            // 默认展开第一个
+            if (data.length > 0) {
+                const firstAccordion = document.querySelector('.collapse');
+                if (firstAccordion) {
+                    new bootstrap.Collapse(firstAccordion, {toggle: true});
+                }
+            }
+            
+            // 绑定PDF下载按钮事件
+            document.querySelectorAll('.pdf-download-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const pdfFilename = this.getAttribute('data-pdf-filename');
+                    if (pdfFilename) {
+                        downloadPDF(pdfFilename);
+                    }
+                });
+            });
+        }
+        
+        // 下载PDF文件
+        function downloadPDF(pdfFilename) {
+            // 创建一个隐藏的<a>标签进行下载
+            const link = document.createElement('a');
+            link.href = `/api/download_pdf?pdf_filename=${encodeURIComponent(pdfFilename)}`;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
