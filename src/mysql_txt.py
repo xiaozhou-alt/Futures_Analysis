@@ -5,9 +5,9 @@ import re
 # 数据库连接配置
 db_config = {
     'host': 'localhost',
-    'user': 'root',
-    'password': 'zhj20031218',
-    'database': 'economy'
+    'user': 'xxx',
+    'password': 'your_password',
+    'database': 'xxx'
 }
 
 # 创建表结构
