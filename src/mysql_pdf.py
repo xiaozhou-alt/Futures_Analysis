@@ -5,9 +5,9 @@ from datetime import datetime
 # 数据库连接配置
 db_config = {
     'host': 'localhost',
-    'user': 'root',
-    'password': 'zhj20031218',
-    'database': 'economy',
+    'user': 'xxx',
+    'password': 'your_password',
+    'database': 'xxx',
     'connect_timeout': 86400,  # 24小时 = 86400秒
     'read_timeout': 86400,   # 增加读取超时时间
     'write_timeout': 86400    # 增加写入超时时间
