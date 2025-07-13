@@ -11,9 +11,9 @@ print(os.path.abspath(os.path.join(os.path.dirname(__file__), '../templates/inde
 # 数据库配置
 db_config = {
     'host': 'localhost',
-    'user': 'root',
-    'password': 'zhj20031218',
-    'database': 'economy',
+    'user': 'xxx',
+    'password': 'your_password',
+    'database': 'xxx',
     'charset': 'utf8mb4',
     'cursorclass': pymysql.cursors.DictCursor
 }
