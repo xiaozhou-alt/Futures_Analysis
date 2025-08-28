@@ -149,5 +149,6 @@ PDF文件展示：
 
 <video src="./demo.mp4"></video>
 
-关于数据集和代码的解读或是更多信息，欢迎关注我的博客：
+关于数据集和代码的解读或是更多信息，欢迎关注我的博客CSDN：[基于 Flask 和 MySQL 的期货数据分析系统](https://blog.csdn.net/soejjdiwjssundo/article/details/149203318)
+
 
